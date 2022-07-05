@@ -1,0 +1,12 @@
+epochs: 50
+batch_size: 128
+lr: 0.001
+data_dir: ../pacs_data
+name_dir: ../pacs_data/names
+save_freq: 5
+source_domain:
+- cartoon
+- art_painting
+train_dir: ../pacs_data/train
+val_dir: ../pacs_data/valid
+weight_adv_s: 0.1
