@@ -188,6 +188,7 @@ class Decoder(nn.Module):
         return input_z
 
 
+# GAN Discriminator
 class Discriminator(nn.Module):
     def __init__(self, in_nc, num_filter, out_nc):
         super(Discriminator, self).__init__()
@@ -214,6 +215,7 @@ class Discriminator(nn.Module):
                 torch.nn.init.normal_(m.conv.weight, mean, std)
 
 
+# Texture-based Network (Domain Prediction)
 class StyleDiscriminator(Encoder):
     def __init__(self, num_filter=64, num_classes=7):
         super(StyleDiscriminator, self).__init__(num_filter=num_filter)

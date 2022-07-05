@@ -116,20 +116,20 @@ if __name__ == '__main__':
     loss_fn_GAN.to(device)
     loss_fn_l1.to(device)
     
-    # Initialize optimizer 
-    optim_f = opt(head_encoder.parameters(), lr=lr, betas=(0.5, 0.999))
-    optim_c = opt(tail_encoder.parameters(), lr=lr, betas=(0.5, 0.999))
+    # Initialize optimizer
+    optim_head = opt(head_encoder.parameters(), lr=lr, betas=(0.5, 0.999))
+    optim_tail = opt(tail_encoder.parameters(), lr=lr, betas=(0.5, 0.999))
     f_bn_param = [] # optimize only bathNorm in adversarial training
     for name, param in head_encoder.named_parameters():
         if 'bn' in name:
             f_bn_param += [param]
-    optim_f_bn = opt(f_bn_param, lr=lr, betas=(0.5, 0.999))
+    optim_head_bn = opt(f_bn_param, lr=lr, betas=(0.5, 0.999))
     optim_class = opt(net_class.parameters(), lr=lr, betas=(0.5, 0.999))
     optim_s = opt(net_domain_disc.parameters(), lr=lr, betas=(0.5, 0.999))
-    optim_d = opt(decoder.parameters(), lr=lr, betas=(0.5, 0.999))
+    optim_decoder = opt(decoder.parameters(), lr=lr, betas=(0.5, 0.999))
     optim_color_disc = opt(color_discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
 
-    # Initialize model parameter 
+    # Initialize model parameter
     head_encoder.normal_weight_init()
     tail_encoder.normal_weight_init()
     net_domain_disc.normal_weight_init()
@@ -173,8 +173,8 @@ if __name__ == '__main__':
             optim_color_disc.step()
 
             # class prediction (training semantic information)
-            optim_f.zero_grad()
-            optim_c.zero_grad()
+            optim_head.zero_grad()
+            optim_tail.zero_grad()
             optim_class.zero_grad()
             
             z_head_set = head_encoder(x)  # z_head_set: [x1, x2, x3]
@@ -182,14 +182,14 @@ if __name__ == '__main__':
             pred_class = net_class(z_tail_set[-1])
             loss_class = F.cross_entropy(pred_class, class_labels)
             loss_class.backward()
-            optim_f.step()
-            optim_c.step()
+            optim_head.step()
+            optim_tail.step()
             optim_class.step()
 
             # Training generator (update encoder, decoder)
-            optim_f.zero_grad()
-            optim_c.zero_grad()
-            optim_d.zero_grad()
+            optim_head.zero_grad()
+            optim_tail.zero_grad()
+            optim_decoder.zero_grad()
 
             z_head_set = head_encoder(x)  # z_head_set: (x1, x2, x3)
             z_tail_set = tail_encoder(z_head_set[-1])   # z_tail_set: (x4, ..., x8)
@@ -202,13 +202,12 @@ if __name__ == '__main__':
             loss_l1 = loss_fn_l1(fake_ab, real_ab)
             G_loss = 100 * loss_l1 + loss_G_fake
             G_loss.backward()
-            optim_f.step()
-            optim_c.step()
-            optim_d.step()
+            optim_head.step()
+            optim_tail.step()
+            optim_decoder.step()
 
 
-            # 2. style-biased domain network
-            # style-biased domain discriminator prediction
+            # texutre-biased domain discriminator prediction
             optim_s.zero_grad()
             z_head_set = head_encoder(x)  # z_head_set: (x1, x2, x3)
             z_cr = randomize(z_head_set[-1], mode='content')
@@ -217,17 +216,17 @@ if __name__ == '__main__':
             loss_s.backward()
             optim_s.step()
 
-            # 3. adversarial style-biased training (update optim_f_bn)
-            optim_f_bn.zero_grad()
+            # 3. adversarial texutre-biased training (update optim_head_bn)
+            optim_head_bn.zero_grad()
             z_head_set = head_encoder(x)
             z_cr = randomize(z_head_set[-1], mode='content')
             pred_domain_labels = net_domain_disc(z_cr)
             loss_adv = -F.cross_entropy(pred_domain_labels, domain_labels)
             loss_adv = loss_adv * weight_adv_s
             loss_adv.backward()
-            optim_f_bn.step()
+            optim_head_bn.step()
             
-
+            
             # print loss
             running_G_loss += G_loss.item()
             running_D_loss += D_loss.item()
