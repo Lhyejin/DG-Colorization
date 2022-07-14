@@ -21,7 +21,7 @@ from utils import *
 def opt(param, lr, betas):
     return optim.Adam(param, lr=lr, betas=betas)
 
-# Reference https://github.com/hyeonseobnam/sagnet
+# Reference https://github.com/facebookresearch/DomainBed
 def randomize(x, mode='style', eps=1e-5):
     device = "cuda" if x.is_cuda else "cpu"
     sizes = x.shape
